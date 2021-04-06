@@ -1,30 +1,57 @@
-from fastapi import FastAPI
-from typing import Optional
-from pydantic import BaseModel
-
+from fastapi import FastAPI, HTTPException
+from typing import Optional, List
+from models import Todo
 
 app = FastAPI()
 
 
-class Package(BaseModel):
-    name : str
-    number : str
-    description : Optional[str] = None
+'''
+    CRUD functionality implementation
+'''
+
+# Dummy db since am not using a real database
+store_todo = []
 
 
-class PackageIn(BaseModel):
-    id : int
-    name : str
-    number : str
-    description : Optional[str] = None
-
-
-@app.get("/")
-async def index():
+@app.get('/')
+async def home():
     return{
-        "message" : "Index",
+        "message" : "Hello World",
     }
 
-@app.post("/package/{id}", response_model=Package, response_model_exclude_unset=True)
-async def make_package(id: int, package: PackageIn):
-    return package
+
+@app.post('/todo/')
+async def create_todo(todo: Todo):
+    store_todo.append(todo)
+    return todo
+
+
+@app.get('/todo/', response_model= List[Todo])
+async def get_all_todos():
+    return store_todo
+
+
+@app.get('/todo/{id}')
+async def get_todo(id : int):
+    try:
+        return store_todo[id]
+    except:
+        raise HTTPException(status_code=404, detail="Todo not found")
+
+
+@app.put('/todo/{id}')
+async def update_todo(id: int, todo : Todo):
+    try:
+        store_todo[id] = todo
+    except:
+        raise HTTPException(status_code=404, detail="Todo not found")
+
+
+@app.delete('/todo/{id}')
+async def delete_todo(id: int):
+    try:
+        obj = store_todo[id]
+        store_todo.pop(id)
+        return obj
+    except:
+        raise HTTPException(status_code=404, detail="Todo not found")
