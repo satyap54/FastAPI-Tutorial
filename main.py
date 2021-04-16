@@ -1,6 +1,7 @@
-from fastapi import FastAPI, HTTPException
-from models import Todo, TodoIn_Pydantic, Todo_Pydantic
-from tortoise.contrib.fastapi import HTTPNotFoundError, register_tortoise
+from datetime import date
+from fastapi import FastAPI
+from models import Todo
+from tortoise.contrib.fastapi import register_tortoise
 from pydantic import BaseModel
 
 app = FastAPI()
@@ -15,6 +16,23 @@ register_tortoise(
 )
 
 
+class TodoIn_Pydantic(BaseModel):
+    id: int
+    todo: str
+    due_date: date
+
+    class Config:
+        orm_mode = True
+
+
+class Todo_Pydantic(BaseModel):
+    todo: str
+    due_date: date
+
+    class Config:
+        orm_mode = True
+
+
 @app.get('/')
 async def read_root():
     return {
@@ -24,10 +42,12 @@ async def read_root():
 @app.post('/todo', response_model=Todo_Pydantic)
 async def create(todo:TodoIn_Pydantic):
     obj = await Todo.create(**todo.dict(exclude_unset=True))
-    return await Todo_Pydantic.from_tortoise_orm(obj)
+    return Todo_Pydantic.from_orm(obj)
 
 
-@app.get('/todo/{id}', response_model=Todo_Pydantic, responses={404: {"model" : HTTPNotFoundError}})
+@app.get('/todo/{id}', response_model=Todo_Pydantic)
 async def get(id:int):
-    return await Todo_Pydantic.from_queryset_single(Todo.get(idid))
+    obj = await  Todo.get(id = id)
+    print(obj.__dict__)
+    return Todo_Pydantic.from_orm(obj)
     
